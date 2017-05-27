@@ -3,7 +3,7 @@ import sys
 import time
 import signal
 
-host='192.168.137.250' #104 mario 99 alex
+host='192.168.137.99' #104 mario 99 alex
 port=23
 msg='IGOR'
 received_data=''
@@ -33,7 +33,7 @@ class MySocket:
         totalsent = 0
         while totalsent < len(msg):
         	sent = self.sock.send(msg[totalsent:])
-        	print color.HEADER+"\n\tEnviado:"+color.OKGREEN+""+msg[totalsent:]
+        	print color.OKBLUE+"\n\tEnviado:"+color.OKGREEN+""+msg[totalsent:]
 		if sent == 0:
   	     		raise RuntimeError("socket connection broken")
 		totalsent = totalsent + sent
@@ -41,7 +41,7 @@ class MySocket:
     def myreceive(self):
         chunks = []
         bytes_recd = 0
-	tamanho=70
+	tamanho=80
         while bytes_recd <  tamanho:	    
 	    #print "R1"
             chunk = self.sock.recv(min(tamanho - bytes_recd, 2048))
@@ -56,10 +56,10 @@ socket_test = MySocket()
 socket_test. __init__()
 socket_test.connect(host, 23) # 20-Mario    105-Alex
 
-while True:	
-
-	socket_test.mysend("T:03:02,P:16:52\n")
-	time.sleep(0.5)
+while True:
+	time.sleep(2)	
+	socket_test.mysend("T:10.43,P:26.29\n")
+	time.sleep(0.1)
 
 #Creates a timeout and receive data
 	def signal_handler(signum, frame):
@@ -69,7 +69,7 @@ while True:
 	signal.alarm(10)   # five seconds
 	try:
 		received_data=socket_test.myreceive()
-		#print received_data
+		print received_data
 
 	except Exception, msg:
 		print color.WARNING +"Timed out!"
@@ -79,36 +79,33 @@ while True:
 	
 	if received_data !="":
 		for i in received_data[:]:
-    			check=False
-        		
-			try:
-	
-				titulo=i.split(':')[0]
-				dados=i.split(':')[1]
-				
-				#print color.OKBLUE +"\n\tTitulo:"+color.OKGREEN+"" + titulo
-				#print color.OKBLUE +"\n\tDados:" +color.OKGREEN+"" + dados
-		
-				if titulo.startswith('DEPOSITO'):
-					check=True
-				elif titulo.startswith('VALVULA'):
-					check=True
-				elif titulo.startswith('HUMIDADE'):
-					check=True
-				elif titulo.startswith('TEMPERATURA'):
-					check=True
-				else:
-					print ""
-					#print color.WARNING +''+ titulo +" nao reconhecido!"
-				
-				if check:
-					print color.OKBLUE+"\tRecebido:"+color.OKGREEN+""+i
-				#print color.HEADER+"\n\tRecebido: "+color.OKGREEN+""+ received_data
+    			
+        		print "received_data:" +i
 
-			except Exception:
-				print ""
-				#print color.WARNING + "Erro ao filtrar dados!"
-	        		#print Exception
+		print "dados null"
+		try:
+	
+			titulo=i.split(':')[i]
+			dados=i.split(':')[i+1]
+			print color.OKBLUE +"\n\tTitulo:"+color.OKGREEN+"" + titulo
+			print color.OKBLUE +"\n\tDados:" +color.OKGREEN+"" + dados
+		
+			if titulo.startswith('DEPOSITO'):
+				print titulo
+	        	elif titulo.startswith('VALVULA'):
+				print titulo
+	        	elif titulo.startswith('HUMIDADE'):
+				print titulo
+	        	elif titulo.startswith('TEMPERATURA'):
+				print titulo
+			else:
+				print color.ENDC + "Dados nao reconhecidos"
+		
+			print color.HEADER+"\n\tRecebido: "+color.OKGREEN+""+ received_data
+
+		except Exception:
+			print color.WARNING + "Erro ao filtrar dados!"
+	        	print Exception
 	else: 
 		print color.WARNING+"Dados nao recebidos"
 		received_data=""

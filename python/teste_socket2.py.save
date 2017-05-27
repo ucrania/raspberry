@@ -1,0 +1,49 @@
+import socket
+import sys
+import time
+
+host='192.168.137.105'
+port=23
+msg='IGOR'
+
+
+class MySocket:
+
+    def __init__(self, sock=None):
+        if sock is None:
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        else:
+            self.sock = sock
+
+    def connect(self, host, port):
+        self.sock.connect((host, port))
+
+    def mysend(self, msg):
+        totalsent = 0
+        while totalsent < len(msg):
+        	sent = self.sock.send(msg[totalsent:])
+        	print "Enviado:"+msg[totalsent:]
+		if sent == 0:
+  	     		raise RuntimeError("socket connection broken")
+     			print 'end'
+		totalsent = totalsent + sent
+
+    def myreceive(self):
+        chunks = []
+        bytes_recd = 0
+        while bytes_recd < 10:
+            chunk = self.sock.recv(min(MSGLEN - bytes_recd, 2048))
+MS            if chunk == b'':
+                raise RuntimeError("socket connection broken")
+            chunks.append(chunk)
+            bytes_recd = bytes_recd + len(chunk)
+        return b''.join(chunks)
+
+socket_test = MySocket()
+socket_test. __init__()
+socket_test.connect("192.168.137.105", 23) # 20-Mario    105-Alex
+
+#while True:
+socket_test.mysend('P%d' %(69))
+socket_test.mysend('B%d\n' %(31))
+time.sleep(10)
