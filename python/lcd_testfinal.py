@@ -1,13 +1,13 @@
-import time
-import spidev
+import time #Tempo Hora, data, etc
+import spidev #SPI
 
-import Adafruit_Nokia_LCD as LCD
-import Adafruit_GPIO.SPI as SPI
+import Adafruit_Nokia_LCD as LCD #LCD nokia
+import Adafruit_GPIO.SPI as SPI #SPI
 #import Adafruit_GPIO as GPIO
 
-import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO #Interacao GPIO Rasp
 
-import Image
+import Image 
 import ImageDraw
 import ImageFont
 
@@ -18,7 +18,9 @@ import os
 import socket
 import signal
 
-host='192.168.137.134' 
+import smtplib
+
+host='192.168.137.36' 
 
 class color:
     HEADER = '\033[95m'
@@ -30,6 +32,7 @@ class color:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
+#criacao de socket para comunicacao arduino-raspberry pi
 class MySocket:
 
     def __init__(self, sock=None):
@@ -64,6 +67,7 @@ class MySocket:
 	    bytes_recd = bytes_recd + len(chunk)
 	return b''.join(chunks).split(",")
 	
+
 def signal_handler(signum, frame):
 	    print color.WARNING+"Time out!"
 		#raise Exception("Timed out!")
@@ -78,8 +82,8 @@ def receber_socket():
 
 	except Exception, msg:
 		print color.WARNING +"Time out!"
-#Checks received data
-	
+
+#Checks received data	
 	if received_data !="":
 		#Deposito	ON/OFF	Humidade	Temperatura
 		devolver=["050","OFF","10.24","50.10"]
@@ -138,6 +142,9 @@ tanquexr=20
 tanqueyb=5
 tanqueyt=45
 nivel=(tanqueyt-tanqueyt)-((recebido*4)/10)
+mail_enable=True  #habilita envio de emails
+mailwassent=False
+
 
 # inicializacao de variaveis socket
 #host='192.168.137.250' #104 mario 99 alex
@@ -224,7 +231,7 @@ try:
                         draw.rectangle((tanquexl,(nivel+6),tanquexr,tanqueyt+1), outline=0, fill=0)
                         
                         #draw.text((22,38),'%.2f %%' % D, font=font)           #Nivel Agua
-			draw.text((22,38),""+dep, font=font)           #Nivel Agua
+			draw.text((22,38),"%d%%"%int(dep), font=font)           #Nivel Agua
                         
                         draw.text((67,38),"%s" %sensores[1], font=font) 
 						
@@ -255,6 +262,30 @@ try:
 						
 			socket_test.mysend("T:%d:%d,P:%d:%d\n" %((trega/60),(trega%60),phrega,pmrega))
 			time.sleep(0.001)
+
+
+
+			#Envia Email caso deposito inferior a 5 porcento
+			if mail_enable:
+				
+				if int(dep)<5 and not mailwassent:
+					server = smtplib.SMTP('smtp.gmail.com', 587)
+					server.starttls()
+					mymail="seic2017g2@gmail.com"
+					mypass="seic2017321"
+					igormail="ucrania95@gmail.com"
+					tomail=igormail
+					server.login(mymail, mypass)
+					print color.WARNING+"Foi enviado email de Alerta."
+
+					msg = "Alerta! O deposito encontra-se vazio.\nSent by RaspberryPI\nMade by: Igor Koval and Alexandre Correia"
+
+					server.sendmail(mymail,tomail, msg)
+					server.quit()
+					mailwassent=True
+
+				elif mailwassent and int(dep)>10:
+					mailwassent=False
 except KeyboardInterrupt:
         spi.close() 
 	sys.exit(0)

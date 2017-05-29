@@ -1,21 +1,21 @@
 import smtplib
- 
-server = smtplib.SMTP('smtp.gmail.com', 587)
-server.starttls()
-mymail="esp8266seicg1@gmail.com"
-mypass="passesp8266"
-igormail="ucrania95@gmail.com"
-alexmail=""
-mariomail="2140237@my.ipleiria.pt"
-tomail=igormail
-server.login(mymail, mypass)
- 
-msg = "Alex o deposito esta vazio!\nDevias passar aqui para o encher!"
-msg = "http://naelshiab.com/tutorial-send-email-python/"
-n=0
-while n<1:
-	server.sendmail(mymail,tomail, msg)
-	n=n+1
-	print "\tMail %d sent" %n
-server.quit()
 
+if dep<5 and not mailwassent: 
+	server = smtplib.SMTP('smtp.gmail.com', 587)
+	server.starttls()
+	mymail="seic2017g2@gmail.com"
+	mypass="seic2017321"
+	igormail="ucrania95@gmail.com"
+	tomail=igormail
+	server.login(mymail, mypass)
+ 
+	msg = "Alerta! O deposito encontra-se vazio."
+
+	server.sendmail(mymail,tomail, msg)
+	server.quit()
+	mailwassent=True
+
+elif mailwassent and dep>10
+	mailwassent=False
+	
+	 
