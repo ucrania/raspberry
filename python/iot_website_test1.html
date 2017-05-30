@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+.button {
+  display: inline-block;
+  padding: 15px 25px;
+  font-size: 15px;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  outline: none;
+  color: #fff;
+  background-color: green;
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 5px #999;
+  position: absolute;
+  right: 20px;
+  top:	70px;
+  font-weight: bold;
+}
+
+body { background-color: #30303d; color: #fff; font-family: "Lato", sans-serif;}
+.chartdiv {
+	width		: 92%;
+	height		: 400px;
+	font-size	: 11px;
+	right		: 40px;
+}
+
+}
+
+.button:hover {background-color: #3e8e41}
+
+.button:active {
+  background-color: #3e8e41;
+  box-shadow: 0 5px #666;
+  transform: translateY(4px);
+}
+
+
+/* Style the tab */
+
+
+div.tab {
+    overflow: hidden;
+    border: 1px solid #ccc;
+    background-color: #f1f1f1;
+}
+
+/* Style the buttons inside the tab */
+div.tab button {
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+    font-size: 17px;
+}
+
+/* Change background color of buttons on hover */
+div.tab button:hover {
+    background-color: #ddd;
+}
+
+/* Create an active/current tablink class */
+div.tab button.active {
+    background-color: #ccc;
+}
+
+/* Style the tab content */
+.tabcontent {
+    display: none;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-top: none;
+}
+
+.time {width: 40px; height: 20px;display: inline-block; align:center}
+
+#mySidenav a {
+    position: absolute;
+    right: -100px;
+    transition: 0.3s;
+    padding: 15px;
+    width: 100px;
+    text-decoration: none;
+    font-size: 20px;
+    color: white;
+    border-radius: 5px 0px 0px 5px;
+}
+
+#mySidenav a:hover {
+    right: 0;
+}
+
+#homeGraph {
+    top: 80px;
+    background-color: #4CAF50;
+}
+
+#temperaturaGraph {
+    top: 140px;
+    background-color:#f44336;
+}
+
+#humidadeGraph {
+    top: 200px;
+    background-color: #555;
+}
+
+#nivelGraph {
+    top: 260px;
+    background-color: #2196F3;
+}
+</style>
+</head>
+<script src="https://www.amcharts.com/lib/3/amcharts.js"></script>
+<script src="https://www.amcharts.com/lib/3/serial.js"></script>
+<script src="https://www.amcharts.com/lib/3/themes/dark.js"></script>
+<body>
+
+
+<div class="tab">
+  <button class="tablinks" onclick="openTab(event, 'Graphs')" id="GraphsTab">Graphs</button>
+  <button class="tablinks" onclick="openTab(event, 'Config')" id="ConfigTab">Config</button>
+</div>
+
+
+<div id="temperaturatab" class="tabcontent">
+	<div id="mySidenav" class="sidenav">
+  <a href="#" id="homeGraph" onclick="openTab(event, 'Graphs')" >Home</a>
+  <a href="#" id="temperaturaGraph" onclick="openTab(event, 'temperaturatab')">Temperatura</a>
+  <a href="#" id="humidadeGraph" onclick="openTab(event, 'humidadetab')">Humidade</a>
+  <a href="#" id="nivelGraph" onclick="openTab(event, 'niveltab')">Nivel da agua</a>
+	<h3>Temperatura</h3>
+  <div id="gt" class="chartdiv"></div>
+  </div>
+	
+</div>
+<div id="humidadetab" class="tabcontent">
+	<div id="mySidenav" class="sidenav">
+  <a href="#" id="homeGraph" onclick="openTab(event, 'Graphs')" >Home</a>
+  <a href="#" id="temperaturaGraph" onclick="openTab(event, 'temperaturatab')">Temperatura</a>
+  <a href="#" id="humidadeGraph" onclick="openTab(event, 'humidadetab')">Humidade</a>
+  <a href="#" id="nivelGraph" onclick="openTab(event, 'niveltab')">Nivel da agua</a>
+	<h3>Humidade</h3>
+  <div id="gh" class="chartdiv"></div>
+  </div>
+	
+</div>
+<div id="niveltab" class="tabcontent">
+	<div id="mySidenav" class="sidenav">
+  <a href="#" id="homeGraph" onclick="openTab(event, 'Graphs')" >Home</a>
+  <a href="#" id="temperaturaGraph" onclick="openTab(event, 'temperaturatab')">Temperatura</a>
+  <a href="#" id="humidadeGraph" onclick="openTab(event, 'humidadetab')">Humidade</a>
+  <a href="#" id="nivelGraph" onclick="openTab(event, 'niveltab')">Nivel da agua</a>
+	<h3>Nivel da agua</h3>
+  <div id="gn" class="chartdiv"></div>
+  </div>
+	
+</div>
+
+<div id="Config" class="tabcontent">
+
+  <h3>Config</h3>
+        <fieldset>
+        <input type="checkbox" id=alarme />Ativar Alarme <br />
+        Tempo de rega:
+        <input id=rega_h type="number" class=time maxlength="2" min=0 max= 10 value="1"  >:
+        <input id=rega_m type="number" class=time maxlength="2" min=0 max= 59 value="10"  ><br>
+        Proxima rega:
+		<input id=rega_h type="number" class=time maxlength="2" min=0 max= 10 value="1"  >:
+		<input id=rega_m type="number" class=time maxlength="2" min=0 max= 59 value="10"   ><br>
+        <input type="submit" value="Save" id=save_button onclick=save() />
+		
+		<button class="button" onclick="changecolor('OnOffButton')" id=OnOffButton>Auto</button>
+
+
+</div>
+
+<div id="Graphs" class="tabcontent" onclick="atualizar()">
+<h3>Home</h3>
+  <div id="mySidenav" class="sidenav">
+  <a href="#" id="homeGraph" onclick="openTab(event, 'Graphs')" >Home</a>
+  <a href="#" id="temperaturaGraph" onclick="openTab(event, 'temperaturatab')">Temperatura</a>
+  <a href="#" id="humidadeGraph" onclick="openTab(event, 'humidadetab')">Humidade</a>
+  <a href="#" id="nivelGraph" onclick="openTab(event, 'niveltab')">Nivel da agua</a>
+</div>
+
+  
+  
+   
+<script>
+function clockupdate(){
+var today = new Date();
+var dd = today.getDate();
+var mm = today.getMonth()+1; //Janeiro é o mes 0!
+var yyyy = today.getFullYear();
+
+var hh = today.getHours();
+var min = today.getMinutes();
+var sec = today.getSeconds();
+hh=checkTime(hh);
+min=checkTime(min);
+sec=checkTime(sec);
+document.getElementById("hatual").innerHTML =hh+":"+min+":"+sec+" "+dd+"/"+mm+"/"+yyyy;
+setTimeout(clockupdate, 1000);
+
+}
+function checkTime(i) {
+    if (i < 10) {i = "0" + i};  // add zero in front of numbers < 10
+    return i;
+}
+clockupdate();
+</script> 
+  <div id="temperatura"></div>
+  <div id="humidade"></div>
+  <div id="prega"></div>
+  <div id="deposito"></div>
+  <div id="valvula"></div>
+
+</div>
+<script>
+
+function openTab(evt, Tabname) {
+
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tabcontent");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tablinks");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+    document.getElementById(Tabname).style.display = "block";
+    evt.currentTarget.className += " active";
+	if (Tabname=="Graphs"){
+	atualizar();
+	}
+}
+//document.getElementById("ConfigTab").click();
+document.getElementById("GraphsTab").click();
+document.getElementById('date').value = (new Date()).format("dd/mm/yyyy");
+
+function changecolor(name) {
+	state=document.getElementById(name);
+    if (state.style.backgroundColor == "red"){
+    	state.innerHTML="Auto ";
+        state.style.backgroundColor = "green";
+    	state='Auto';
+    	//alert('Ligado');
+    }else{
+    	state.innerHTML="Manual";
+    	state.style.backgroundColor = "red";
+    	state='Manual';
+    	//alert('Desligado');
+    }
+}
+function save() {
+	var alarm=document.getElementById('alarme').checked;
+	if(alarm == true){
+    	alert('Alarme ativo');
+    }
+    document.getElementById('rega_h').value
+    alert("Tempo de rega:"+document.getElementById('rega_h').value+'h'+document.getElementById('rega_m').value+'min');
+}
+
+function atualizar() {
+	var tempatual=21.41;
+	var humatual=65.84;
+	//var prega=new Date("May 29, 2017 17:50:44");
+	var prega=new Date("May 29, 2017 17:50:44");//+hprega+":"+mrega+":00");
+	prega=""+prega.getHours()+":"+prega.getMinutes()+":"+prega.getSeconds();
+	var deposito=15;
+	var irrigation=true; 
+	var valvula="A espera";
+	
+	if (irrigation){
+		valvula="A regar...";
+	}else{
+		valvula="A espera";
+	}
+	document.getElementById("temperatura").innerHTML="Temperatura atual: "+tempatual+"";
+	document.getElementById("humidade").innerHTML="Humidade atual: "+humatual+"";
+	document.getElementById("prega").innerHTML="Proxima rega: "+prega+"";
+	document.getElementById("deposito").innerHTML="Nivel do deposito: "+deposito+"%";
+	document.getElementById("valvula").innerHTML="Estado da rega: "+valvula+"";
+	
+	
+	
+	setTimeout(atualizar, 1000);
+}
+
+</script>
+
+</body>
+<script>
+
+/**
+ * Init some variables for demo purposes
+ */
+var day = 0;
+var firstDate = new Date();
+firstDate.setMinutes( firstDate.getMinutes() - 500 );
+
+/**
+ * Function that generates random data
+ */
+function generateChartData() {
+    var chartData = [];
+    // current date
+    var firstDate = new Date();
+    // now set 500 minutes back
+    firstDate.setMinutes(firstDate.getMinutes() - 1000);
+
+    // and generate 500 data items
+    for (var i = 0; i < 500; i++) {
+        var newDate = new Date(firstDate);
+        // each time we add one minute
+        newDate.setMinutes(newDate.getMinutes() + i);
+        // some random number
+        var visits = Math.round(Math.random() * 40 + 10 + i + Math.random() * i / 5);
+        // add data item to the array
+        chartData.push({
+            date: newDate,
+            visits: visits
+        });
+    }
+
+  return chartData;
+}
+
+/**
+ * Create the chart
+ */
+ 
+var chartt = AmCharts.makeChart( "gt", {
+  "type": "serial",
+  "theme": "dark",
+  "zoomOutButton": {
+    "backgroundColor": '#000000',
+    "backgroundAlpha": 0.15
+  },
+  "dataProvider": generateChartData(),
+  "categoryField": "date",
+  "categoryAxis": {
+    "parseDates": true,
+    "minPeriod": "mm",
+    "dashLength": 1,
+    "gridAlpha": 0.15,
+    "axisColor": "#DADADA"
+	
+  },
+  "graphs": [ {
+    "id": "gt",
+    "valueField": "visits",
+    "bullet": "round",
+    "bulletBorderColor": "#FFFFFF",
+    "bulletBorderThickness": 2,
+    "lineThickness": 2,
+    "lineColor": "#b5030d",
+    "negativeLineColor": "#0352b5",
+    "hideBulletsCount": 50
+  } ],
+  "chartCursor": {
+    "categoryBalloonDateFormat": "JJ:NN, DD MMMM",
+     "cursorPosition": "mouse"
+  },
+  "chartScrollbar": {
+    "graph": "gt",
+    "scrollbarHeight": 40,
+    "color": "#FFFFFF",
+    "autoGridCount": true
+  }
+} )
+
+var charth = AmCharts.makeChart( "gh", {
+  "type": "serial",
+  "theme": "dark",
+  "zoomOutButton": {
+    "backgroundColor": '#000000',
+    "backgroundAlpha": 0.15
+  },
+  "dataProvider": generateChartData(),
+  "categoryField": "date",
+  "categoryAxis": {
+    "parseDates": true,
+    "minPeriod": "mm",
+    "dashLength": 1,
+    "gridAlpha": 0.15,
+    "axisColor": "#DADADA"
+	
+  },
+  "graphs": [ {
+    "id": "gt",
+    "valueField": "visits",
+    "bullet": "round",
+    "bulletBorderColor": "#FFFFFF",
+    "bulletBorderThickness": 2,
+    "lineThickness": 2,
+    "lineColor": "#666699",
+    "negativeLineColor": "#0352b5",
+    "hideBulletsCount": 50
+  } ],
+  "chartCursor": {
+    "categoryBalloonDateFormat": "JJ:NN, DD MMMM",
+     "cursorPosition": "mouse"
+  },
+  "chartScrollbar": {
+    "graph": "gt",
+    "scrollbarHeight": 40,
+    "color": "#FFFFFF",
+    "autoGridCount": true
+  }
+} )
+
+var chartn = AmCharts.makeChart( "gn", {
+  "type": "serial",
+  "theme": "dark",
+  "zoomOutButton": {
+    "backgroundColor": '#000000',
+    "backgroundAlpha": 0.15
+  },
+  "dataProvider": generateChartData(),
+  "categoryField": "date",
+  "categoryAxis": {
+    "parseDates": true,
+    "minPeriod": "mm",
+    "dashLength": 1,
+    "gridAlpha": 0.15,
+    "axisColor": "#DADADA"
+	
+  },
+  "graphs": [ {
+    "id": "gt",
+    "valueField": "visits",
+    "bullet": "round",
+    "bulletBorderColor": "#FFFFFF",
+    "bulletBorderThickness": 2,
+    "lineThickness": 2,
+    "lineColor": "#0066ff",
+    "negativeLineColor": "#0352b5",
+    "hideBulletsCount": 50
+  } ],
+  "chartCursor": {
+    "categoryBalloonDateFormat": "JJ:NN, DD MMMM",
+     "cursorPosition": "mouse"
+  },
+  "chartScrollbar": {
+    "graph": "gt",
+    "scrollbarHeight": 40,
+    "color": "#FFFFFF",
+    "autoGridCount": true
+  }
+} )
+
+/**
+ * Set interval to push new data points periodically
+ */
+// set up the chart to update every second
+setInterval( function() {
+  // normally you would load new datapoints here,
+  // but we will just generate some random values
+  // and remove the value from the beginning so that
+  // we get nice sliding graph feeling
+
+  // remove datapoint from the beginning
+  chartt.dataProvider.shift();
+  charth.dataProvider.shift();
+  chartn.dataProvider.shift();
+  // add new one at the end
+  day++;
+  var newDate = new Date( firstDate );
+  newDate.setMinutes( newDate.getHours() + day );
+  var visits = Math.round( Math.random() * 40 ) - 20;
+  chartt.dataProvider.push( {
+    date: newDate,
+    visits: visits
+  } );
+  charth.dataProvider.push( {
+    date: newDate,
+    visits: visits
+  } );
+  chartn.dataProvider.push( {
+    date: newDate,
+    visits: visits
+  } );
+  
+  
+  chartt.validateData();
+  charth.validateData();
+  chartn.validateData();
+}, 60000 );
+</script>
+</html> 
