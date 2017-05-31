@@ -20,6 +20,15 @@ import signal
 
 import smtplib
 
+import threading #biblioteca de tread
+
+#comunicao websocket
+import tornado.httpserver
+import tornado.ioloop
+import tornado.options
+import tornado.websocket
+import tornado.web
+
 host='192.168.137.36' 
 
 class color:
@@ -65,12 +74,103 @@ class MySocket:
                 raise RuntimeError("socket connection broken")
 	    chunks.append(chunk)
 	    bytes_recd = bytes_recd + len(chunk)
-	return b''.join(chunks).split(",")
+	return b''.join(chunks)
 	
+	
+
+
+#-----------------Codigo web_socket---------------
+
+class LedHandler(tornado.websocket.WebSocketHandler):
+        def check_origin(self, origin):
+		return True
+
+
+	def open(self):
+		print "connection opened from: {}".format(self.request.remote_ip)
+		#self.write_message("connection opened")
+
+
+	def on_close(self):
+		print "connection closed"
+
+	def on_message(self, message):
+		print color.OKBLUE + "Message received websocket: {}".format(color.OKGREEN + message)
+		#aqui metes as condicoes conforme a mensagem
+		#self.write_message("Servidor Recebeu")
+		msg_recebida=[""]
+		msg_recebida=message.split(",")
+		
+		if msg_recebida !="":
+			#Tempo rega	, Prox. rega , Man/Auto
+			for i in msg_recebida[:]:
+				check=False
+				
+				try:
+					
+					titulo=(i.split(':'))[0]
+					dados= (i.split(':'))[1]
+					#print color.OKBLUE +"\n\tTitulo:"+color.OKGREEN+"" + titulo
+					#print color.OKBLUE +"\n\tDados:" +color.OKGREEN+"" + dados
+					if titulo.startswith('TR'):
+						check=True
+						trega_web=dados #tempo rega
+					elif titulo.startswith('PR'): #prox rega
+						check=True
+						#Extrai a hora e minutos de prox rega
+						phrega=(dados.split('.'))[0] #horas
+						pmrega= (dados.split('.'))[1] #minutos
+					elif titulo.startswith('MO') and (dados=="Auto" or dados=="Manual"):
+						check=True
+						if dados =="A":
+							auto_manual='Automatico'
+						elif dados =="M":
+							auto_manual='Manual'
+					elif titulo.startswith('AL') and (dados=="ON" or dados=="OFF"):
+						check=True
+						if dados =="ON":
+							mail_enable=True
+						elif dados =="OFF":
+							mail_enable=False
+							
+					elif titulo.startswith('GET') and dados=="DATA":
+						#devolver=["050","OFF","10.24","50.10"]
+						self.write_message("V:"+devolver[1]+",D:"+devolver[0]+",H:"+devolver[2]+",T:"+devolver[3])
+						print "Dados enviados para a webpage."
+					elif titulo.startswith('GET') and dados=="INIT":	
+						print "Dados enviados para a webpage."
+
+					else:
+						check=False
+						print ""
+						#print color.WARNING +''+ titulo +" nao reconhecido!"
+					
+					if check:
+						print color.OKBLUE+"\tRecebido:"+color.OKGREEN+""+i
+					#print color.HEADER+"\n\tRecebido: "+color.OKGREEN+""+ received_data
+
+				except Exception:
+					#print ""
+					print color.WARNING + "Erro ao filtrar dados!"
+					#print Exception
+		else: 
+			print color.WARNING+"Dados nao recebidos"
+			#devolver=""	
+	
+	
+	
+	
+	
+	
+	
+#-------Definicao Time Out rececao de dados---------	
 
 def signal_handler(signum, frame):
 	    print color.WARNING+"Time out!"
 		#raise Exception("Timed out!")
+	
+	
+#Rececao dados socket Arduino Raspberry pi------------	
 	
 def receber_socket():
 #Creates a timeout and receive data
@@ -78,7 +178,7 @@ def receber_socket():
 	signal.alarm(10)   # five seconds
 	received_data=[""]
 	try:
-		received_data=socket_test.myreceive()
+		received_data=socket_test.myreceive().split(",")
 
 	except Exception, msg:
 		print color.WARNING +"Time out!"
@@ -134,7 +234,7 @@ GPIO.setup(21, GPIO.IN,  pull_up_down=GPIO.PUD_UP)
 
 #inicializacao de variaveis
 recebido=31.41
-Auto='Automatico'
+auto_manual='Automatico'
 
 
 tanquexl=0
@@ -142,7 +242,7 @@ tanquexr=20
 tanqueyb=5
 tanqueyt=45
 nivel=(tanqueyt-tanqueyt)-((recebido*4)/10)
-mail_enable=True  #habilita envio de emails
+mail_enable=False  #habilita envio de emails
 mailwassent=False
 
 
@@ -182,11 +282,45 @@ spi.mode = 0b01
 desligar=0
 tdesligar=58
 
-socket_test = MySocket()
-socket_test. __init__()
-socket_test.connect(host, port) 
+#socket_test = MySocket()
+#socket_test. __init__()
+#socket_test.connect(host, port)
+
+
+#if __name__ == "__main__":
+#	tornado.options.parse_command_line()
+#	app = tornado.web.Application(handlers=[(r"/", LedHandler)])
+#	server = tornado.httpserver.HTTPServer(app)
+#	server.listen(8000)
+#	tornado.ioloop.IOLoop.instance().start()
+#	server_webpage=open("ws//192.168.249.140:8000")
+#	time.sleep(10) 
 
 try:
+		#Corre numa thread a parte
+		def thread_webSocket():
+
+			if __name__ == "__main__":
+				tornado.options.parse_command_line()
+				app = tornado.web.Application(handlers=[(r"/", LedHandler)])
+				server = tornado.httpserver.HTTPServer(app)
+				server.listen(8000)
+				tornado.ioloop.IOLoop.instance().start()
+				
+		def thread_socket():
+			socket_test = MySocket()
+			socket_test. __init__()
+			socket_test.connect(host, port)
+				
+		thread_web=threading.Thread(target=thread_webSocket)
+		thread_web.daemon=True
+		thread_web.start()
+		
+		thread=threading.Thread(target=thread_socket)
+		thread.daemon=True
+		thread.start()
+
+
         while True:
                 if not GPIO.input(21) or desligar:
 			draw.rectangle((0,0,LCD.LCDWIDTH,LCD.LCDHEIGHT), outline=255, fill=255)
@@ -236,34 +370,49 @@ try:
                         draw.text((67,38),"%s" %sensores[1], font=font) 
 						
                         if GPIO.input(12):
-                                if Auto=='Manual':
-                                        Auto='Automatico'
+                                if auto_manual=='Manual':
+                                        auto_manual='Automatico'
                                 else: 
-                                        Auto='Manual'
+                                        auto_manual='Manual'
                                 time.sleep(0.33)
                                         
-                        draw.text((22,30),Auto, font=font)                            #'06:30:00'
+                        draw.text((22,30),auto_manual, font=font)                            #'06:30:00'
                         trega=(tensao*120+3) #calculo tempo de rega
                         
                         draw.text((22,22),'%s:%s:00'%(phrega,pmrega), font=font)                        #
                         draw.text((22,14),'', font=font)                                #Proxima 
                         
                         #print datetime.time((int)(trega/60),(int)(trega%60),0,0)
-                        if trega>60:
-                                draw.text((22, 6),'%dh %dmin' %((trega/60),(trega%60)), font=font)#Tempo de rega Horas
-                        if trega<=60:
-                                draw.text((22, 6),'%d Minutos' %trega, font=font)#Tempo de rega Minutos
+						#Imprime tempo de rega para o lcd
+			trega_lcd=0
+			if auto_manual=='Automatico':
+				trega_lcd=trega_web
+			elif auto_manual=='Manual': 	
+				trega_lcd=trega
+							
+                        if trega_lcd>60:
+                                draw.text((22, 6),'%dh %dmin' %((trega_lcd/60),(trega_lcd%60)), font=font)#Tempo de rega Horas
+                        if trega_lcd<=60:
+                                draw.text((22, 6),'%d Minutos' %trega_lcd, font=font)#Tempo de rega Minutos
+						#---------------------------------
                         
                         draw.text((22,-2),'%s:%s:%s'%(hatual,matual,satual), font=font)          #Hora atual
                                         
                         disp.image(image)
                         disp.display()
                         time.sleep(0.001)
-						
-			socket_test.mysend("T:%d:%d,P:%d:%d\n" %((trega/60),(trega%60),phrega,pmrega))
+			#Envia dados atraves do socket para o arduino			
+			if auto_manual=='Automatico':
+				socket_test.mysend("T:%d:%d,P:%d:%d\n" %((trega_web/60),(trega_web%60),phrega,pmrega))
+			elif auto_manual=='Manual': 			
+				socket_test.mysend("T:%d:%d,P:%d:%d\n" %((trega/60),(trega%60),phrega,pmrega))
 			time.sleep(0.001)
-
-
+			
+			#Envia dados servidor (Raspberry Pi) - Webpage --------------
+			
+			##Deposito	ON/OFF	Humidade	Temperatura
+			#devolver=["050","OFF","10.24","50.10"]
+			server_webpage.write_message("V:"+devolver[2]+",D:%d,H:%.2f,T:%.2f"%(devolver[1],devolver[2],devolver[3]))
 
 			#Envia Email caso deposito inferior a 5 porcento
 			if mail_enable:
@@ -289,4 +438,16 @@ try:
 except KeyboardInterrupt:
         spi.close() 
 	sys.exit(0)
+	
+	
+	
+
+
+
+		
+
+
+
+
+
 

@@ -2,6 +2,19 @@
 <html>
 <head>
 <style>
+#tank {
+	top: 20%;
+	height: 30%;
+    width: 20%;
+    border-style: dotted solid solid;
+    background-color: light-blue;
+    position:absolute;
+	z-index=1;
+}
+.right{
+position: absolute;
+right: 10%;
+}
 .button {
   display: inline-block;
   padding: 15px 25px;
@@ -116,6 +129,17 @@ div.tab button.active {
     top: 260px;
     background-color: #2196F3;
 }
+#water:hover{
+	height=20px;
+	background-color: #3764ef;
+#server-log {
+  width: 100%;
+  height: 200px;
+  overflow: scroll;
+  background: #ffffe0;
+  border: 1px dotted #cdcdcd;
+}
+}
 </style>
 </head>
 <script src="https://www.amcharts.com/lib/3/amcharts.js"></script>
@@ -169,12 +193,14 @@ div.tab button.active {
   <h3>Config</h3>
         <fieldset>
         <input type="checkbox" id=alarme />Ativar Alarme <br />
+		Alertar quando nivel da agua estiver a:
+        <input id=tresh_nivel type="number" class=time maxlength="2" min=0 max= 100 value="5"  ><br>
         Tempo de rega:
         <input id=rega_h type="number" class=time maxlength="2" min=0 max= 10 value="1"  >:
         <input id=rega_m type="number" class=time maxlength="2" min=0 max= 59 value="10"  ><br>
         Proxima rega:
-		<input id=rega_h type="number" class=time maxlength="2" min=0 max= 10 value="1"  >:
-		<input id=rega_m type="number" class=time maxlength="2" min=0 max= 59 value="10"   ><br>
+		<input id=prega_h type="number" class=time maxlength="2" min=0 max= 10 value="1"  >:
+		<input id=prega_m type="number" class=time maxlength="2" min=0 max= 59 value="10"   ><br>
         <input type="submit" value="Save" id=save_button onclick=save() />
 		
 		<button class="button" onclick="changecolor('OnOffButton')" id=OnOffButton>Auto</button>
@@ -189,9 +215,20 @@ div.tab button.active {
   <a href="#" id="temperaturaGraph" onclick="openTab(event, 'temperaturatab')">Temperatura</a>
   <a href="#" id="humidadeGraph" onclick="openTab(event, 'humidadetab')">Humidade</a>
   <a href="#" id="nivelGraph" onclick="openTab(event, 'niveltab')">Nivel da agua</a>
+<div>
+  <p id="start-demo"></button>
+  <p id="end-demo" disabled="disabled"></button>
 </div>
+<div id="chartdiv"></div>
+<p>Server log:</p>
+<div id="server-log"></div>
 
-  
+  </div>
+ <div id="temperatura"></div>
+  <div id="humidade"></div>
+  <div id="prega"></div>
+  <div id="deposito"></div>
+  <div id="valvula"></div>
   
    
 <script>
@@ -217,13 +254,8 @@ function checkTime(i) {
 }
 clockupdate();
 </script> 
-  <div id="temperatura"></div>
-  <div id="humidade"></div>
-  <div id="prega"></div>
-  <div id="deposito"></div>
-  <div id="valvula"></div>
+ 
 
-</div>
 <script>
 
 function openTab(evt, Tabname) {
@@ -243,8 +275,8 @@ function openTab(evt, Tabname) {
 	atualizar();
 	}
 }
-//document.getElementById("ConfigTab").click();
 document.getElementById("GraphsTab").click();
+document.getElementById("ConfigTab").click();
 document.getElementById('date').value = (new Date()).format("dd/mm/yyyy");
 
 function changecolor(name) {
@@ -260,21 +292,40 @@ function changecolor(name) {
     	state='Manual';
     	//alert('Desligado');
     }
+	enviardados("MO:"+state);
 }
 function save() {
 	var alarm=document.getElementById('alarme').checked;
+	hrega=document.getElementById('rega_h').value;
+	mrega=document.getElementById('rega_m').value;
+	phrega=document.getElementById('prega_h').value;
+	pmrega=document.getElementById('prega_m').value;
+	tresh_nivel=document.getElementById('tresh_nivel').value;
+	
+	
 	if(alarm == true){
-    	alert('Alarme ativo');
+    	//alert('Alarme ativo');
     }
     document.getElementById('rega_h').value
-    alert("Tempo de rega:"+document.getElementById('rega_h').value+'h'+document.getElementById('rega_m').value+'min');
-}
+    //alert("Tempo de rega:"+document.getElementById('rega_h').value+'h'+document.getElementById('rega_m').value+'min');
+	if (alarm){
+		alarme="ON"
+	}else{
+		alarme="OFF"
+	}
+	
+	enviardados("AL:"+alarme);
+	var pr=(phrega*60+parseInt(pmrega));
+	enviardados("PR:"+phrega+"."+phrega);
+	var tr=(hrega*60+parseInt(mrega));
+	enviardados("TR:"+tr+"");
+	}
 
 function atualizar() {
-	var tempatual=21.41;
+	var tempatual=21.61;
 	var humatual=65.84;
 	//var prega=new Date("May 29, 2017 17:50:44");
-	var prega=new Date("May 29, 2017 17:50:44");//+hprega+":"+mrega+":00");
+	var prega=new Date("May 29, 2017 17:50:44");//+phrega+":"+pmrega+":00");
 	prega=""+prega.getHours()+":"+prega.getMinutes()+":"+prega.getSeconds();
 	var deposito=15;
 	var irrigation=true; 
@@ -301,35 +352,28 @@ function atualizar() {
 </body>
 <script>
 
-/**
- * Init some variables for demo purposes
- */
+
 var day = 0;
 var firstDate = new Date();
 firstDate.setMinutes( firstDate.getMinutes() - 500 );
 
-/**
- * Function that generates random data
- */
 function generateChartData() {
+	var lista=[1,2,3,4,5,6,7,8,9,11,21,9,8,7,6,5,4,3,2,1,0,2,3,5,3,6,8];//recebe 500 dados
     var chartData = [];
     // current date
     var firstDate = new Date();
     // now set 500 minutes back
-    firstDate.setMinutes(firstDate.getMinutes() - 1000);
+    firstDate.setMinutes(firstDate.getMinutes() - 500);
 
     // and generate 500 data items
     for (var i = 0; i < 500; i++) {
         var newDate = new Date(firstDate);
         // each time we add one minute
         newDate.setMinutes(newDate.getMinutes() + i);
-        // some random number
-        var visits = Math.round(Math.random() * 40 + 10 + i + Math.random() * i / 5);
+        
+        var visits = lista[i];
         // add data item to the array
-        chartData.push({
-            date: newDate,
-            visits: visits
-        });
+        chartData.push({date: newDate,visits: visits});
     }
 
   return chartData;
@@ -478,6 +522,7 @@ setInterval( function() {
   var newDate = new Date( firstDate );
   newDate.setMinutes( newDate.getHours() + day );
   var visits = Math.round( Math.random() * 40 ) - 20;
+  
   chartt.dataProvider.push( {
     date: newDate,
     visits: visits
@@ -496,5 +541,88 @@ setInterval( function() {
   charth.validateData();
   chartn.validateData();
 }, 60000 );
+
+
+var interval;
+var websocket;
+
+//var websocketEchoServerUri = "wss://echo.websocket.org/";
+var websocketEchoServerUri = "ws://192.168.249.135:8000";
+var chartData = []; //will be updated by our simulated server
+var serverLog = document.getElementById("server-log");
+var startButton = document.getElementById('start-demo');
+var endButton = document.getElementById('end-demo');
+
+startButton.addEventListener('click', startDemo);
+endButton.addEventListener('click', endDemo);
+
+function startDemo() {
+  startButton.disabled = "disabled";
+  endButton.disabled = "";
+  websocket = initWebSocket(websocketEchoServerUri);
+}
+
+function endDemo() {
+  startButton.disabled = "";
+  endButton.disabled = "disabled";
+  websocket.close();
+}
+
+function initWebSocket(wsUri) {
+  var ws = new WebSocket(wsUri);
+  ws.onopen = onConnect;
+  ws.onclose = onClose;
+  ws.onerror = onError;
+  ws.onmessage = onreceive;
+  
+  return ws;
+}
+
+function onConnect(wsEvent) {
+  writeToScreen("Server connection successful. Listening for data now.");
+  interval = setInterval(pedirdados, 10000); //we're simulating a datafeed by calling our getDataFromServer method every 2 seconds
+	enviardados("GET:INIT");
+  }
+
+function pedirdados(dados){
+	websocket.send("GET:DATA");
+}
+function enviardados(dados){
+	websocket.send(dados);
+}
+
+function onError(wsEvent) {
+  writeToScreen("<span style='color: red'>ERROR:" + wsEvent + "</span>");
+}
+
+function onClose(wsEvent) {
+  writeToScreen("Server connection closed");
+  clearInterval(interval);
+}
+
+function writeToScreen(message) {
+  var pre = document.createElement("p");
+  pre.style.wordWrap = "break-word";
+  pre.innerHTML = message;
+  serverLog.appendChild(pre);
+  serverLog.scrollTop = serverLog.scrollHeight;
+}
+
+function onreceive(wsEvent) {
+	recebido=wsEvent.data;
+	
+	if(recebido.startsWith("GRAFICO"))
+		updateChart(wsEvent);
+ }
+  
+function updateChart(wsEvent) {
+  //writeToScreen(wsEvent.data);
+  
+  //websocket.send("GET:");
+  //enviardados("Mensagem recebida com "+wsEvent.data);
+  alert("Mensagem recebida: "+ wsEvent.data);
+  }
+  startDemo();
+
 </script>
 </html> 
