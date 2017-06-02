@@ -3,7 +3,7 @@ import sys
 import time
 import signal
 
-host='192.168.137.104' #104 mario 99 alex
+host='192.168.137.114' #104 mario 99 alex
 port=23
 msg='IGOR'
 received_data=''
@@ -66,8 +66,8 @@ time.sleep(0.5)
 def signal_handler(signum, frame):
     raise Exception("Timed out!")
 
-signal.signal(signal.SIGALRM, signal_handler)
-signal.alarm(10)   # five seconds
+#signal.signal(signal.SIGALRM, signal_handler)
+#signal.alarm(10)   # five seconds
 try:
 	received_data=socket_test.myreceive()
 	print received_data

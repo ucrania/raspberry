@@ -21,6 +21,7 @@ import signal
 import smtplib
 
 import threading #biblioteca de tread
+import json
 
 #comunicao websocket
 import tornado.httpserver
@@ -29,7 +30,7 @@ import tornado.options
 import tornado.websocket
 import tornado.web
 
-host='192.168.137.36' 
+host='192.168.137.155' 
 
 class color:
     HEADER = '\033[95m'
@@ -95,12 +96,14 @@ class LedHandler(tornado.websocket.WebSocketHandler):
 		print "connection closed"
 
 	def on_message(self, message):
+		global phrega, pmrega, trega_web ,auto_manual, mail_enable
 		print color.OKBLUE + "Message received websocket: {}".format(color.OKGREEN + message)
 		#aqui metes as condicoes conforme a mensagem
 		#self.write_message("Servidor Recebeu")
 		msg_recebida=[""]
 		msg_recebida=message.split(",")
-		
+		print msg_recebida[0]			
+
 		if msg_recebida !="":
 			#Tempo rega	, Prox. rega , Man/Auto
 			for i in msg_recebida[:]:
@@ -119,12 +122,14 @@ class LedHandler(tornado.websocket.WebSocketHandler):
 						check=True
 						#Extrai a hora e minutos de prox rega
 						phrega=(dados.split('.'))[0] #horas
+						print phrega 
 						pmrega= (dados.split('.'))[1] #minutos
+						print pmrega
 					elif titulo.startswith('MO') and (dados=="Auto" or dados=="Manual"):
 						check=True
-						if dados =="A":
+						if dados =="Auto":
 							auto_manual='Automatico'
-						elif dados =="M":
+						elif dados =="Manual":
 							auto_manual='Manual'
 					elif titulo.startswith('AL') and (dados=="ON" or dados=="OFF"):
 						check=True
@@ -137,8 +142,39 @@ class LedHandler(tornado.websocket.WebSocketHandler):
 						#devolver=["050","OFF","10.24","50.10"]
 						self.write_message("V:"+devolver[1]+",D:"+devolver[0]+",H:"+devolver[2]+",T:"+devolver[3])
 						print "Dados enviados para a webpage."
+					elif titulo.startswith('GET') and dados=="TEMPERATURA":
+                                                #devolver=["050","OFF","10.24","50.10"]
+                                                self.write_message("T:"+devolver[3])
+					elif titulo.startswith('GET') and dados=="HUMIDADE":
+                                                #devolver=["050","OFF","10.24","50.10"]
+                                                self.write_message("H:"+devolver[2])
+					elif titulo.startswith('GET') and dados=="DEPOSITO":
+                                                #devolver=["050","OFF","10.24","50.10"]
+                                                self.write_message("D:"+devolver[0])
+					elif titulo.startswith('GET') and dados=="VALVULA":
+                                                #devolver=["050","OFF","10.24","50.10"]
+                                                self.write_message("V:"+devolver[1])
+
+
+					
+					
+
+			#Envia dados servidor (Raspberry Pi) - Webpage --------------
+			
+			##Deposito	ON/OFF	Humidade	Temperatura
+			#devolver=["050","OFF","10.24","50.10"]
+			#self.write_message("V:"+devolver[2]+",D:%d,H:%.2f,T:%.2f"%(devolver[1],devolver[2],devolver[3]))
+			
 					elif titulo.startswith('GET') and dados=="INIT":	
 						print "Dados enviados para a webpage."
+						grapht=[22.44]*500
+						graphh=[22.44]*500
+						graphd=[22.44]*500
+
+						self.write_message("GRAFICOTOTALTEMPERATURA:"+json.dumps(grapht))
+						self.write_message("GRAFICOTOTALHUMIDADE:"+json.dumps(graphh))
+						self.write_message("GRAFICOTOTALDEPOSITO:"+json.dumps(graphd))
+
 
 					else:
 						check=False
@@ -183,10 +219,10 @@ def receber_socket():
 	except Exception, msg:
 		print color.WARNING +"Time out!"
 
+
 #Checks received data	
 	if received_data !="":
 		#Deposito	ON/OFF	Humidade	Temperatura
-		devolver=["050","OFF","10.24","50.10"]
 		for i in received_data[:]:
 			check=False
 			
@@ -234,7 +270,7 @@ GPIO.setup(21, GPIO.IN,  pull_up_down=GPIO.PUD_UP)
 
 #inicializacao de variaveis
 recebido=31.41
-auto_manual='Automatico'
+auto_manual='Manual'
 
 
 tanquexl=0
@@ -244,6 +280,9 @@ tanqueyt=45
 nivel=(tanqueyt-tanqueyt)-((recebido*4)/10)
 mail_enable=False  #habilita envio de emails
 mailwassent=False
+trega_lcd=0
+trega_web=0
+devolver=["050","OFF","10.24","50.10"]
 
 
 # inicializacao de variaveis socket
@@ -281,6 +320,9 @@ spi.max_speed_hz = 10000000
 spi.mode = 0b01
 desligar=0
 tdesligar=58
+phrega=19
+pmrega=32
+
 
 #socket_test = MySocket()
 #socket_test. __init__()
@@ -298,31 +340,30 @@ tdesligar=58
 
 try:
 		#Corre numa thread a parte
-		def thread_webSocket():
-
-			if __name__ == "__main__":
-				tornado.options.parse_command_line()
-				app = tornado.web.Application(handlers=[(r"/", LedHandler)])
-				server = tornado.httpserver.HTTPServer(app)
-				server.listen(8000)
-				tornado.ioloop.IOLoop.instance().start()
-				
-		def thread_socket():
-			socket_test = MySocket()
-			socket_test. __init__()
-			socket_test.connect(host, port)
-				
-		thread_web=threading.Thread(target=thread_webSocket)
-		thread_web.daemon=True
-		thread_web.start()
+	def thread_webSocket():
 		
-		thread=threading.Thread(target=thread_socket)
-		thread.daemon=True
-		thread.start()
+		if __name__ == "__main__":
+			tornado.options.parse_command_line()
+			app = tornado.web.Application(handlers=[(r"/", LedHandler)])
+			server_wb = tornado.httpserver.HTTPServer(app)
+			server_wb.listen(7000)
+			tornado.ioloop.IOLoop.instance().start()
+				
+#	def thread_socket():
+	socket_test = MySocket()
+	socket_test. __init__()
+	socket_test.connect(host, port)
+			
+	thread_web=threading.Thread(target=thread_webSocket)
+	thread_web.daemon=True
+	thread_web.start()
+		
+#	thread=threading.Thread(target=thread_socket)
+#	thread.daemon=True
+#	thread.start()
 
-
-        while True:
-                if not GPIO.input(21) or desligar:
+	while True:
+	        if not GPIO.input(21) or desligar:
 			draw.rectangle((0,0,LCD.LCDWIDTH,LCD.LCDHEIGHT), outline=255, fill=255)
                         if not desligar:
 				os.system('sudo shutdown')
@@ -355,8 +396,8 @@ try:
                         hrega=(datetime.time((int)(trega/60),(int)(trega%60),0,0)).strftime('%H')
                         mrega=(datetime.time((int)(trega/60),(int)(trega%60),0,0)).strftime('%M')
 
-                        phrega=19
-                        pmrega=32
+                        #phrega=19
+                        #pmrega=32
                         dep=sensores[0]
 			
 			
@@ -378,15 +419,15 @@ try:
                                         
                         draw.text((22,30),auto_manual, font=font)                            #'06:30:00'
                         trega=(tensao*120+3) #calculo tempo de rega
-                        
+                        #print phrega
                         draw.text((22,22),'%s:%s:00'%(phrega,pmrega), font=font)                        #
                         draw.text((22,14),'', font=font)                                #Proxima 
                         
                         #print datetime.time((int)(trega/60),(int)(trega%60),0,0)
 						#Imprime tempo de rega para o lcd
-			trega_lcd=0
+
 			if auto_manual=='Automatico':
-				trega_lcd=trega_web
+				trega_lcd=int(trega_web)
 			elif auto_manual=='Manual': 	
 				trega_lcd=trega
 							
@@ -402,17 +443,13 @@ try:
                         disp.display()
                         time.sleep(0.001)
 			#Envia dados atraves do socket para o arduino			
-			if auto_manual=='Automatico':
-				socket_test.mysend("T:%d:%d,P:%d:%d\n" %((trega_web/60),(trega_web%60),phrega,pmrega))
-			elif auto_manual=='Manual': 			
-				socket_test.mysend("T:%d:%d,P:%d:%d\n" %((trega/60),(trega%60),phrega,pmrega))
+			
+			socket_test.mysend("T:%d.%d,P:%s.%s,\n" %((trega_lcd/60),(trega_lcd%60),phrega,pmrega))
+						
+				
 			time.sleep(0.001)
 			
-			#Envia dados servidor (Raspberry Pi) - Webpage --------------
-			
-			##Deposito	ON/OFF	Humidade	Temperatura
-			#devolver=["050","OFF","10.24","50.10"]
-			server_webpage.write_message("V:"+devolver[2]+",D:%d,H:%.2f,T:%.2f"%(devolver[1],devolver[2],devolver[3]))
+#estava aqui, enviar dados write.message
 
 			#Envia Email caso deposito inferior a 5 porcento
 			if mail_enable:

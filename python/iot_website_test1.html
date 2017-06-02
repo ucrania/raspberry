@@ -9,7 +9,7 @@
     border-style: dotted solid solid;
     background-color: light-blue;
     position:absolute;
-	z-index=1;
+	z-index:1;
 }
 .right{
 position: absolute;
@@ -129,16 +129,8 @@ div.tab button.active {
     top: 260px;
     background-color: #2196F3;
 }
-#water:hover{
-	height=20px;
-	background-color: #3764ef;
-#server-log {
-  width: 100%;
-  height: 200px;
-  overflow: scroll;
-  background: #ffffe0;
-  border: 1px dotted #cdcdcd;
-}
+
+
 }
 </style>
 </head>
@@ -199,7 +191,7 @@ div.tab button.active {
         <input id=rega_h type="number" class=time maxlength="2" min=0 max= 10 value="1"  >:
         <input id=rega_m type="number" class=time maxlength="2" min=0 max= 59 value="10"  ><br>
         Proxima rega:
-		<input id=prega_h type="number" class=time maxlength="2" min=0 max= 10 value="1"  >:
+		<input id=prega_h type="number" class=time maxlength="2" min=0 max= 23 value="1"  >:
 		<input id=prega_m type="number" class=time maxlength="2" min=0 max= 59 value="10"   ><br>
         <input type="submit" value="Save" id=save_button onclick=save() />
 		
@@ -208,7 +200,7 @@ div.tab button.active {
 
 </div>
 
-<div id="Graphs" class="tabcontent" onclick="atualizar()">
+<div id="Graphs" class="tabcontent" ">
 <h3>Home</h3>
   <div id="mySidenav" class="sidenav">
   <a href="#" id="homeGraph" onclick="openTab(event, 'Graphs')" >Home</a>
@@ -224,6 +216,7 @@ div.tab button.active {
 <div id="server-log"></div>
 
   </div>
+  <div id="hatual"></div>
  <div id="temperatura"></div>
   <div id="humidade"></div>
   <div id="prega"></div>
@@ -316,20 +309,22 @@ function save() {
 	
 	enviardados("AL:"+alarme);
 	var pr=(phrega*60+parseInt(pmrega));
-	enviardados("PR:"+phrega+"."+phrega);
+	enviardados("PR:"+phrega+"."+pmrega);
 	var tr=(hrega*60+parseInt(mrega));
 	enviardados("TR:"+tr+"");
 	}
+var tempatual=21.61;
+var humatual=65.84;
+var deposito;
+var irrigation=true; 
+var valvula="A espera";
 
 function atualizar() {
-	var tempatual=21.61;
-	var humatual=65.84;
+	
 	//var prega=new Date("May 29, 2017 17:50:44");
-	var prega=new Date("May 29, 2017 17:50:44");//+phrega+":"+pmrega+":00");
-	prega=""+prega.getHours()+":"+prega.getMinutes()+":"+prega.getSeconds();
-	var deposito=15;
-	var irrigation=true; 
-	var valvula="A espera";
+	var prega=0;//new Date("May 29, 2017 17:50:44");//+phrega+":"+pmrega+":00");
+	//prega=""+prega.getHours()+":"+prega.getMinutes()+":"+prega.getSeconds();
+	
 	
 	if (irrigation){
 		valvula="A regar...";
@@ -338,13 +333,15 @@ function atualizar() {
 	}
 	document.getElementById("temperatura").innerHTML="Temperatura atual: "+tempatual+"";
 	document.getElementById("humidade").innerHTML="Humidade atual: "+humatual+"";
-	document.getElementById("prega").innerHTML="Proxima rega: "+prega+"";
+	//document.getElementById("prega").innerHTML="Proxima rega: "+prega+"";
+	
+	document.getElementById("prega").innerHTML="Proxima rega: "+checkTime(phrega)+":"+checkTime(pmrega)+":00";
 	document.getElementById("deposito").innerHTML="Nivel do deposito: "+deposito+"%";
 	document.getElementById("valvula").innerHTML="Estado da rega: "+valvula+"";
 	
 	
 	
-	setTimeout(atualizar, 1000);
+	setTimeout(atualizar, 100);
 }
 
 </script>
@@ -353,7 +350,7 @@ function atualizar() {
 <script>
 
 
-var day = 0;
+var hour = 0;
 var firstDate = new Date();
 firstDate.setMinutes( firstDate.getMinutes() - 500 );
 
@@ -547,7 +544,7 @@ var interval;
 var websocket;
 
 //var websocketEchoServerUri = "wss://echo.websocket.org/";
-var websocketEchoServerUri = "ws://192.168.249.135:8000";
+var websocketEchoServerUri = "ws://192.168.249.21:7000";
 var chartData = []; //will be updated by our simulated server
 var serverLog = document.getElementById("server-log");
 var startButton = document.getElementById('start-demo');
@@ -580,12 +577,16 @@ function initWebSocket(wsUri) {
 
 function onConnect(wsEvent) {
   writeToScreen("Server connection successful. Listening for data now.");
-  interval = setInterval(pedirdados, 10000); //we're simulating a datafeed by calling our getDataFromServer method every 2 seconds
+  interval = setInterval(pedirdados, 3000); //we're simulating a datafeed by calling our getDataFromServer method every 2 seconds
 	enviardados("GET:INIT");
   }
 
 function pedirdados(dados){
-	websocket.send("GET:DATA");
+	//websocket.send("GET:DATA");
+	setTimeout(websocket.send("GET:TEMPERATURA"),1);
+	setTimeout(websocket.send("GET:HUMIDADE"),50);
+	setTimeout(websocket.send("GET:DEPOSITO"),100);
+	setTimeout(websocket.send("GET:VALVULA"),150);
 }
 function enviardados(dados){
 	websocket.send(dados);
@@ -609,18 +610,79 @@ function writeToScreen(message) {
 }
 
 function onreceive(wsEvent) {
-	recebido=wsEvent.data;
-	
-	if(recebido.startsWith("GRAFICO"))
+	var recebido=wsEvent.data;
+	var dados=recebido.split(":")[1];
+	//alert(recebido);
+	if(recebido.startsWith("GRAFICOTOTALTEMPERATURA:")){
+		alert(recebido);
+		var zeta = recebido;
+		obj = JSON.parse(zeta);
+		alert("obj: "+jsonobj);
+		alert(recebido);
 		updateChart(wsEvent);
+	}
+	if(recebido.startsWith("GRAFICOTOTALHUMIDADE:")){
+		updateChart(wsEvent);
+		alert(recebido);
+	}
+	if(recebido.startsWith("GRAFICOTOTALDEPOSITO:")){
+		updateChart(wsEvent);
+		alert(recebido);
+	}
+	if(recebido.startsWith("T:")){
+		//alert("Temperatura recebida: "+dados);
+		tempatual=dados;
+		updateChart(wsEvent);
+	}
+	if(recebido.startsWith("H:")){
+		humatual=dados;
+		//alert(humatual);
+	}
+	if(recebido.startsWith("D:")){
+		//alert(dados);
+		deposito=parseInt(dados);
+	}
+	if(recebido.startsWith("V:")){
+	//alert(dados);
+		if (dados=="ON"){
+		 irrigation=true;
+		}else{
+		irrigation=false;
+		}
+	}
+	
  }
   
 function updateChart(wsEvent) {
-  //writeToScreen(wsEvent.data);
+  chartt.dataProvider.shift();
+  charth.dataProvider.shift();
+  chartn.dataProvider.shift();
+  // add new one at the end
+  day++;
+  var newDate = new Date( firstDate );
+  newDate.setMinutes( newDate.getHours() + day );
+  //var visits = Math.round( Math.random() * 40 ) - 20;
+  var visits = wsEvent.data.split(":")[1];
+  alert("Visitas: "+visits);
   
-  //websocket.send("GET:");
-  //enviardados("Mensagem recebida com "+wsEvent.data);
-  alert("Mensagem recebida: "+ wsEvent.data);
+  
+  chartt.dataProvider.push( {
+    date: newDate,
+    visits: visits
+  } );
+  charth.dataProvider.push( {
+    date: newDate,
+    visits: visits
+  } );
+  chartn.dataProvider.push( {
+    date: newDate,
+    visits: visits
+  } );
+  
+  
+  chartt.validateData();
+  charth.validateData();
+  chartn.validateData();
   }
   startDemo();
 

@@ -38,7 +38,7 @@ class MySocket:
 
 socket_test = MySocket()
 socket_test. __init__()
-socket_test.connect("192.168.137.105", 23)
+socket_test.connect("192.168.137.114", 23)
 while True:
 	socket_test.mysend("G11")
 	print socket_test.myreceive()
